@@ -25,7 +25,7 @@ val tripsdist = trips.
 //As stated in the description, we assume that the earth is a sphere with radius 6371km.
 //In order to find interessting points, we want to classify our points via their coordinates into buckets. 
 //Imagine we put a grid over the earth with quadrats of about 100m length use 63720
-val num_buckets = 63710 /360
+val num_buckets = 63710 / 360
 
 def initBucketLat(lat: Column) : Column = {
     val BucketLat = floor((lat + lit(180)) * lit(num_buckets))
@@ -56,6 +56,7 @@ val trips2 = trips.
     drop($"improvement_surcharge").
     drop($"total_amount").
     drop($"tip_amount")
+
 
 //Add the Bucket Columns to our Dataset
 val tripsBuckets = trips2.
