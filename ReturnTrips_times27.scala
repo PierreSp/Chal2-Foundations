@@ -1,6 +1,3 @@
-val tripsComplete = trips
-val trips = tripsComplete.limit(1000)
-
 //Formula for exact distance computation via the great circle distance 
 def makeDistanceExpression(lat1 : Column, lat2 : Column, long1 : Column, long2 : Column) : Column = {
 
@@ -33,7 +30,9 @@ def initBucketTime(time: Column) : Column = {
     return BucketTime
 }
 
-val trips2 = trips.
+// /////////////////////////////////////////////////////////////
+// LIMIT IS DEFINED HERE
+val trips2 = trips.limit(50000).
     drop($"VendorID").
     drop($"passenger_count").
     drop($"trip_distance").
