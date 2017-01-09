@@ -1,5 +1,41 @@
-val tripsComplete = trips
-val trips = tripsComplete.limit(1000)
+
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.Column
+import org.apache.spark.sql.Dataset
+import org.apache.spark.sql.Row
+
+def time[T](proc: => T): T = {
+    val start=System.nanoTime()
+    val res = proc // call the code
+    val end = System.nanoTime()
+    println("Time elapsed: " + (end-start)/1000 + " microsecs")
+    res
+}
+
+val schema = StructType(Array(
+    StructField("VendorID", DataTypes.StringType,false),
+    StructField("tpep_pickup_datetime", DataTypes.TimestampType,false),
+    StructField("tpep_dropoff_datetime", DataTypes.TimestampType,false),
+    StructField("passenger_count", DataTypes.IntegerType,false),
+    StructField("trip_distance", DataTypes.DoubleType,false),
+    StructField("pickup_longitude", DataTypes.DoubleType,false),
+    StructField("pickup_latitude", DataTypes.DoubleType,false),
+    StructField("RatecodeID", DataTypes.IntegerType,false),
+    StructField("store_and_fwd_flag", DataTypes.StringType,false),
+    StructField("dropoff_longitude", DataTypes.DoubleType,false),
+    StructField("dropoff_latitude", DataTypes.DoubleType,false),
+    StructField("payment_type", DataTypes.IntegerType,false),
+    StructField("fare_amount", DataTypes.DoubleType,false),
+    StructField("extra", DataTypes.DoubleType,false),
+    StructField("mta_tax", DataTypes.DoubleType,false),
+    StructField("tip_amount", DataTypes.DoubleType,false),
+    StructField("tolls_amount", DataTypes.DoubleType,false),
+    StructField("improvement_surcharge", DataTypes.DoubleType,false),
+    StructField("total_amount", DataTypes.DoubleType, false)
+))
+
+val tripsDF = spark.read.schema(schema).option("header", true).csv("yellow_tripdata_2016-01.csv")
+val trips = tripsDF.where($"pickup_longitude" =!= 0 && $"pickup_latitude" =!= 0 && $"dropoff_longitude" =!= 0 && $"dropoff_latitude" =!= 0)
 
 //Formula for exact distance computation via the great circle distance 
 def makeDistanceExpression(lat1 : Column, lat2 : Column, long1 : Column, long2 : Column) : Column = {
@@ -12,15 +48,6 @@ def makeDistanceExpression(lat1 : Column, lat2 : Column, long1 : Column, long2 :
 
     return deltasigma*lit(6371e3)
 }
-
-val tripsdist = trips.
-    withColumn("Distanceexact", makeDistanceExpression(
-        $"pickup_latitude",
-        $"dropoff_latitude",
-        $"pickup_longitude",
-        $"dropoff_longitude")).
-    withColumn("Pickuptime", $"tpep_pickup_datetime".cast("long")).
-    withColumn("Dropofftime", $"tpep_dropoff_datetime".cast("long"))
 
 //As stated in the description, we assume that the earth is a sphere with radius 6371km.
 //In order to find interessting points, we want to classify our points via their coordinates into buckets. 
@@ -42,7 +69,9 @@ def initBucketTime(time: Column) : Column = {
     return BucketTime
 }
 
-val trips2 = trips.
+// /////////////////////////////////////////////////////////////
+// LIMIT IS DEFINED HERE
+val trips2 = trips.limit(5000).
     drop($"VendorID").
     drop($"passenger_count").
     drop($"trip_distance").
@@ -83,10 +112,12 @@ val tripsClones = tripsBuckets.
 //Join with trips where buckets of pickup and dropoff are the same
 val JoinedTrips = tripsClones.as("to").
     join(
-        tripsBuckets.as("back"), 
+        tripsClones.as("back"), 
         $"to.Pickup_Long_Bucket" === $"back.Dropoff_Long_Bucket" &&
         $"to.Pickup_Lat_Bucket" === $"back.Dropoff_Lat_Bucket" &&
-        $"to.Dropoff_Time_Bucket" === $"back.Pickup_Time_Bucket" , "inner")
+        $"to.Dropoff_Time_Bucket" === $"back.Pickup_Time_Bucket" &&
+        $"back.Pickup_Long_Bucket" === $"to.Dropoff_Long_Bucket" &&
+        $"back.Pickup_Lat_Bucket" === $"to.Dropoff_Lat_Bucket", "inner")
 
 val Joinedfilter = JoinedTrips.
     drop($"to.Pickup_Long_Bucket").
