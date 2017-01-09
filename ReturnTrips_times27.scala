@@ -13,15 +13,6 @@ def makeDistanceExpression(lat1 : Column, lat2 : Column, long1 : Column, long2 :
     return deltasigma*lit(6371e3)
 }
 
-val tripsdist = trips.
-    withColumn("Distanceexact", makeDistanceExpression(
-        $"pickup_latitude",
-        $"dropoff_latitude",
-        $"pickup_longitude",
-        $"dropoff_longitude")).
-    withColumn("Pickuptime", $"tpep_pickup_datetime".cast("long")).
-    withColumn("Dropofftime", $"tpep_dropoff_datetime".cast("long"))
-
 //As stated in the description, we assume that the earth is a sphere with radius 6371km.
 //In order to find interessting points, we want to classify our points via their coordinates into buckets. 
 //Imagine we put a grid over the earth with quadrats of about 100m length use 63720
