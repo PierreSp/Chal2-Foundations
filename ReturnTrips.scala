@@ -22,7 +22,7 @@ val tripsdist = trips.
 //As stated in the description, we assume that the earth is a sphere with radius 6371km.
 //In order to find interessting points, we want to classify our points via their coordinates into buckets. 
 //Imagine we put a grid over the earth with quadrats of about 100m length use 63720
-val num_buckets = 63710 /360
+val num_buckets = 63710 / 360
 
 def initBucketLat(lat: Column) : Column = {
     val BucketLat = floor((lat + lit(180)) * lit(num_buckets))
@@ -39,10 +39,11 @@ def initBucketTime(time: Column) : Column = {
     return BucketTime
 }
 
-val trips2 = trips.drop($"VendorID").drop($"passenger_count").drop($"trip_distance").drop($"RatecodeID").drop($"store_and_fwd_flag").drop($"payment_type").drop($"fare_amount").drop($"extra").drop($"mta_tax").drop($"tolls_amount").drop($"improvement_surcharge").drop($"total_amount").drop($"tip_amount")
 
+val trips2a = trips.drop($"VendorID").drop($"passenger_count").drop($"trip_distance").drop($"RatecodeID").drop($"store_and_fwd_flag").drop($"payment_type").drop($"fare_amount").drop($"extra").drop($"mta_tax").drop($"tolls_amount").drop($"improvement_surcharge").drop($"total_amount").drop($"tip_amount")
+val trips2b = trips2a.limit(50000)
 //Add the Bucket Columns to our Dataset
-val tripsBuckets = trips2.
+val tripsBuckets = trips2b.
     withColumn("Pickup_Long_Bucket", initBucketLong($"pickup_longitude")).
     withColumn("Pickup_Lat_Bucket", initBucketLat($"pickup_latitude")).
     withColumn("Dropoff_Long_Bucket", initBucketLong($"dropoff_longitude")).

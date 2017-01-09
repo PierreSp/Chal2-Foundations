@@ -1,6 +1,6 @@
 *.class
 *.log
-
+*.csv
 # sbt specific
 .cache
 .history
