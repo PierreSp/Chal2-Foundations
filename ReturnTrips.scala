@@ -1,3 +1,6 @@
+val tripsComplete = trips
+val trips = tripsComplete.limit(1000)
+
 //Formula for exact distance computation via the great circle distance 
 def makeDistanceExpression(lat1 : Column, lat2 : Column, long1 : Column, long2 : Column) : Column = {
 
@@ -39,7 +42,20 @@ def initBucketTime(time: Column) : Column = {
     return BucketTime
 }
 
-val trips2 = trips.drop($"VendorID").drop($"passenger_count").drop($"trip_distance").drop($"RatecodeID").drop($"store_and_fwd_flag").drop($"payment_type").drop($"fare_amount").drop($"extra").drop($"mta_tax").drop($"tolls_amount").drop($"improvement_surcharge").drop($"total_amount").drop($"tip_amount")
+val trips2 = trips.
+    drop($"VendorID").
+    drop($"passenger_count").
+    drop($"trip_distance").
+    drop($"RatecodeID").
+    drop($"store_and_fwd_flag").
+    drop($"payment_type").
+    drop($"fare_amount").
+    drop($"extra").
+    drop($"mta_tax").
+    drop($"tolls_amount").
+    drop($"improvement_surcharge").
+    drop($"total_amount").
+    drop($"tip_amount")
 
 //Add the Bucket Columns to our Dataset
 val tripsBuckets = trips2.
@@ -112,3 +128,5 @@ val exactJoinedTrips = exactJoinedTripsTime.
             $"back.dropoff_latitude", 
             $"to.pickup_longitude", 
             $"back.dropoff_longitude") <= 100)
+
+exactJoinedTrips.agg(count("*")).show()
