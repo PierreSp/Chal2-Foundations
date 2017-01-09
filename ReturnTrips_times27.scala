@@ -32,7 +32,7 @@ def initBucketTime(time: Column) : Column = {
 
 // /////////////////////////////////////////////////////////////
 // LIMIT IS DEFINED HERE
-val trips2 = trips.limit(5000).
+val trips2 = trips.
     drop($"VendorID").
     drop($"passenger_count").
     drop($"trip_distance").
