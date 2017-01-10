@@ -87,7 +87,7 @@ object ReturnTrips {
         //Join with trips where buckets of pickup and dropoff are the same
         val JoinedTrips = tripsClones.as("to").
             join(
-                tripsBuckets.as("back"), 
+                tripsClones.as("back"), 
                 $"to.Pickup_Long_Bucket" === $"back.Dropoff_Long_Bucket" &&
                 $"to.Pickup_Lat_Bucket" === $"back.Dropoff_Lat_Bucket" &&
                 $"to.Dropoff_Time_Bucket" === $"back.Pickup_Time_Bucket" &&
@@ -120,6 +120,6 @@ object ReturnTrips {
             where( makeDistanceExpression($"back.pickup_latitude", $"to.dropoff_latitude", $"back.pickup_longitude", $"to.dropoff_longitude") <= 100).
             where(makeDistanceExpression($"to.pickup_latitude", $"back.dropoff_latitude", $"to.pickup_longitude", $"back.dropoff_longitude") <= 100)
 
-        return exactJoinedTripsTime
+        return exactJoinedTrips.dropDuplicates
     }
 }
