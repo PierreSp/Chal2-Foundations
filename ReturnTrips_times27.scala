@@ -32,7 +32,7 @@ def initBucketTime(time: Column) : Column = {
 
 // /////////////////////////////////////////////////////////////
 // LIMIT IS DEFINED HERE
-val trips2 = trips.limit(50000).
+val trips2 = trips.limit(1000).
     drop($"VendorID").
     drop($"passenger_count").
     drop($"trip_distance").
@@ -63,11 +63,11 @@ val tripsClones = tripsBuckets.
         "Pickup_Long_Bucket", 
         explode(array($"Pickup_Long_Bucket"-1, $"Pickup_Long_Bucket", $"Pickup_Long_Bucket"+1))).
     withColumn(
-            "Pickup_Lat_Bucket", 
-            explode(array($"Pickup_Lat_Bucket"-1, $"Pickup_Lat_Bucket", $"Pickup_Lat_Bucket"+1))).
+        "Pickup_Lat_Bucket", 
+        explode(array($"Pickup_Lat_Bucket"-1, $"Pickup_Lat_Bucket", $"Pickup_Lat_Bucket"+1))).
     withColumn(
-            "Pickup_Time_Bucket", 
-            explode(array($"Pickup_Time_Bucket", $"Pickup_Time_Bucket"-1)))
+        "Pickup_Time_Bucket", 
+        explode(array($"Pickup_Time_Bucket", $"Pickup_Time_Bucket"-1)))
 
 
 //Join with trips where buckets of pickup and dropoff are the same
