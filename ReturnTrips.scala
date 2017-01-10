@@ -23,9 +23,9 @@ object ReturnTrips {
 
         val R = 6371000
         val pi = math.Pi
-        val angle_lat = (2*pi*R)/(100*360)
-        val max_lat = 60.908756256103516
-        val angle_lon = (2*pi*R*math.cos(math.toRadians(max_lat)))/(100*360)
+        val angle_lat = (2*pi*R)/(105*360)
+        val max_lat = 60.908756256113516 // 60.908756256103516
+        val angle_lon = (2*pi*R*math.cos(math.toRadians(max_lat)))/(105*360)
 
         //As stated in the description, we assume that the earth is a sphere with radius 6371km.
         //In order to find interessting points, we want to classify our points via their coordinates into buckets. 
