@@ -21,23 +21,23 @@ object ReturnTrips {
             return deltasigma*lit(6371e3)
         }
 
-        val R = lit(6371000)
-        val pi = lit(3.14159265359)
-        val angle_lat = (lit(2)*pi*R)/(lit(100)*lit(360))
-        val max_lat = lit(60.908756256103516)
-        val angle_lon = (lit(2)*pi*R*cos(toRadians(max_lat)))/(lit(100)*lit(360))
+        val R = 6371000
+        val pi = math.Pi
+        val angle_lat = (2*pi*R)/(100*360)
+        val max_lat = 60.908756256103516
+        val angle_lon = (2*pi*R*math.cos(math.toRadians(max_lat)))/(100*360)
 
         //As stated in the description, we assume that the earth is a sphere with radius 6371km.
         //In order to find interessting points, we want to classify our points via their coordinates into buckets. 
         //Imagine we put a grid over the earth with quadrats of about 100m length
 
         def initBucketLat(lat: Column) : Column = {
-            val BucketLat = floor(angle_lat*lat)
+            val BucketLat = floor(lat * lit(angle_lat))
             return BucketLat 
         }
 
         def initBucketLong(long: Column) : Column = {   
-            val BucketLong = floor(angle_lon*long)
+            val BucketLong = floor(long * lit(angle_lon))
             return BucketLong
         }
 
