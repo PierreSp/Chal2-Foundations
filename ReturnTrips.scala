@@ -23,9 +23,9 @@ object ReturnTrips {
 
         val R = 6371000
         val pi = math.Pi
-        val angle_lat = (2*pi*R)/(105*360)
+        val angle_lat = (2*pi*R)/(101*360)
         val max_lat = 60.908756256113516 // 60.908756256103516
-        val angle_lon = (2*pi*R*math.cos(math.toRadians(max_lat)))/(105*360)
+        val angle_lon = (2*pi*R*math.cos(math.toRadians(max_lat)))/(101*360)
 
         //As stated in the description, we assume that the earth is a sphere with radius 6371km.
         //In order to find interessting points, we want to classify our points via their coordinates into buckets. 
@@ -42,7 +42,7 @@ object ReturnTrips {
         }
 
         def initBucketTime(time: Column) : Column = {   
-            val BucketTime = floor((time.cast("long") / 28800D))
+            val BucketTime = floor((time.cast("long") / 29800D)) // 28800D
             return BucketTime
         }
 
@@ -67,9 +67,9 @@ object ReturnTrips {
             withColumn("Pickup_Long_Bucket", initBucketLong($"pickup_longitude")).
             withColumn("Pickup_Lat_Bucket", initBucketLat($"pickup_latitude")).
             withColumn("Dropoff_Long_Bucket", initBucketLong($"dropoff_longitude")).
-            withColumn("Dropoff_Lat_Bucket", initBucketLat($"dropoff_latitude")).
-            withColumn("Pickup_Time_Bucket", initBucketTime($"tpep_pickup_datetime")).
-            withColumn("Dropoff_Time_Bucket", initBucketTime($"tpep_dropoff_datetime"))
+            withColumn("Dropoff_Lat_Bucket", initBucketLat($"dropoff_latitude"))
+            //withColumn("Pickup_Time_Bucket", initBucketTime($"tpep_pickup_datetime")).
+            //withColumn("Dropoff_Time_Bucket", initBucketTime($"tpep_dropoff_datetime"))
 
         //We now multiply our dataset 9 times to get all the neighbour buckets (because there might be interessting points in neighbour buckets as well)
         val tripsClones = tripsBuckets.
@@ -78,10 +78,10 @@ object ReturnTrips {
                 explode(array($"Pickup_Long_Bucket"-1, $"Pickup_Long_Bucket", $"Pickup_Long_Bucket"+1))).
             withColumn(
                     "Pickup_Lat_Bucket", 
-                    explode(array($"Pickup_Lat_Bucket"-1, $"Pickup_Lat_Bucket", $"Pickup_Lat_Bucket"+1))).
-            withColumn(
-                    "Pickup_Time_Bucket", 
-                    explode(array($"Pickup_Time_Bucket", $"Pickup_Time_Bucket"-1)))
+                    explode(array($"Pickup_Lat_Bucket"-1, $"Pickup_Lat_Bucket", $"Pickup_Lat_Bucket"+1)))
+            //withColumn(
+             //       "Pickup_Time_Bucket", 
+             //       explode(array($"Pickup_Time_Bucket", $"Pickup_Time_Bucket"-1)))
 
 
         //Join with trips where buckets of pickup and dropoff are the same
@@ -90,25 +90,25 @@ object ReturnTrips {
                 tripsClones.as("back"), 
                 $"to.Pickup_Long_Bucket" === $"back.Dropoff_Long_Bucket" &&
                 $"to.Pickup_Lat_Bucket" === $"back.Dropoff_Lat_Bucket" &&
-                $"to.Dropoff_Time_Bucket" === $"back.Pickup_Time_Bucket" &&
+                //$"to.Dropoff_Time_Bucket" === $"back.Pickup_Time_Bucket" &&
                 $"back.Pickup_Long_Bucket" === $"to.Dropoff_Long_Bucket" &&
                 $"back.Pickup_Lat_Bucket" === $"to.Dropoff_Lat_Bucket", "inner")
-
+//        JoinedTrips.cache()
         val Joinedfilter = JoinedTrips.
             drop($"to.Pickup_Long_Bucket").
             drop($"to.Pickup_Lat_Bucket").
             drop($"to.Dropoff_Long_Bucket").
             drop($"to.Dropoff_Lat_Bucket").
-            drop($"to.Pickup_Time_Bucket").
-            drop($"to.Dropoff_Time_Bucket").
+            //drop($"to.Pickup_Time_Bucket").
+            //drop($"to.Dropoff_Time_Bucket").
             drop($"back.Pickup_Long_Bucket").
             drop($"back.Pickup_Lat_Bucket").
             drop($"back.Dropoff_Long_Bucket").
-            drop($"back.Dropoff_Lat_Bucket").
-            drop($"back.Pickup_Time_Bucket").
-            drop($"back.Dropoff_Time_Bucket").
-            drop($"back.tpep_dropoff_datetime").
-            drop($"to.tpep_pickup_datetime")
+            drop($"back.Dropoff_Lat_Bucket")
+            //drop($"back.Pickup_Time_Bucket").
+            //drop($"back.Dropoff_Time_Bucket")
+            //drop($"back.tpep_dropoff_datetime").
+            //drop($"to.tpep_pickup_datetime")
 
         //Now we need to check the hour rxestringation and only return those where b's pickup time is within 8 hours after a's dropoff time.
         val exactJoinedTripsTime = Joinedfilter.
