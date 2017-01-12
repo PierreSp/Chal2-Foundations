@@ -80,10 +80,10 @@ object ReturnTrips {
             return long_bucket
         }
 
-        // def initBucketTime(time: Column) : Column = {   
-        //     val BucketTime = floor((time.cast("long") / 29800D)) // 28800D
-        //     return BucketTime
-        // }
+        def bucket_time(time: Column) : Column = {   
+             val t_bucket = floor((time.cast("long") / 28900D)) // 28800D
+             return t_bucket
+         }
 
         // Drop all columns that are never used.
         val trips2 = trips.
@@ -106,8 +106,9 @@ object ReturnTrips {
             withColumn("Pickup_Long_Bucket", bucket_long($"pickup_longitude")).
             withColumn("Pickup_Lat_Bucket", bucket_lat($"pickup_latitude")).
             withColumn("Dropoff_Long_Bucket", bucket_long($"dropoff_longitude")).
-            withColumn("Dropoff_Lat_Bucket", bucket_lat($"dropoff_latitude"))
-
+            withColumn("Dropoff_Lat_Bucket", bucket_lat($"dropoff_latitude")).
+            withColumn("Pickup_Time_Bucket", bucket_time($"tpep_pickup_datetime")).
+            withColumn("Dropoff_Time_Bucket", bucket_time($"tpep_dropoff_datetime"))
         /*
         We need to look at neighbouring buckets too to get all potential
         matches, therefore we will introduce clones of each trip, with adjusted
@@ -131,8 +132,12 @@ object ReturnTrips {
                 "Pickup_Lat_Bucket", 
                 explode(array($"Pickup_Lat_Bucket"-1,
                               $"Pickup_Lat_Bucket",
-                              $"Pickup_Lat_Bucket"+1)))
+                              $"Pickup_Lat_Bucket"+1))).
 
+            withColumn(
+                "Pickup_Time_Bucket", 
+                explode(array($"Pickup_Time_Bucket",
+                    		  $"Pickup_Time_Bucket"-1)))
 
         // Perform the join based on the introduced buckets!
         val trips_joined = trips_cloned.as("to").
@@ -141,7 +146,8 @@ object ReturnTrips {
                 $"to.Pickup_Long_Bucket" === $"back.Dropoff_Long_Bucket" &&
                 $"to.Pickup_Lat_Bucket" === $"back.Dropoff_Lat_Bucket" &&
                 $"back.Pickup_Long_Bucket" === $"to.Dropoff_Long_Bucket" &&
-                $"back.Pickup_Lat_Bucket" === $"to.Dropoff_Lat_Bucket", "inner")
+                $"back.Pickup_Lat_Bucket" === $"to.Dropoff_Lat_Bucket" &&
+                $"to.Dropoff_Time_Bucket" === $"back.Pickup_Time_Bucket" &&, "inner")
         
         // Drop buckets as they will not be used anymore.
         val trips_joined2 = trips_joined.

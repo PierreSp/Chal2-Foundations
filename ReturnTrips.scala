@@ -70,7 +70,9 @@ object ReturnTrips {
             withColumn("Dropoff_Lat_Bucket", initBucketLat($"dropoff_latitude"))
             //withColumn("Pickup_Time_Bucket", initBucketTime($"tpep_pickup_datetime")).
             //withColumn("Dropoff_Time_Bucket", initBucketTime($"tpep_dropoff_datetime"))
-
+            withColumn(
+                    "Pickup_Time_Bucket", 
+                    explode(array($"Pickup_Time_Bucket", $"Pickup_Time_Bucket"-1)))
         //We now multiply our dataset 9 times to get all the neighbour buckets (because there might be interessting points in neighbour buckets as well)
         val tripsClones = tripsBuckets.
             withColumn(
