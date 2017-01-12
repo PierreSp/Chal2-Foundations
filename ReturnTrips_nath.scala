@@ -128,7 +128,7 @@ object ReturnTrips {
 
         /* We will create a seperate value the time-clones, as we only need
         them on one side of the join */
-        val tips_cloned_with_time = trips_cloned.
+        val trips_cloned_with_time = trips_cloned.
             withColumn(
                 "Pickup_Time_Bucket", 
                 explode(array($"Pickup_Time_Bucket"-1,
