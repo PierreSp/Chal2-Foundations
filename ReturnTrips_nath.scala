@@ -54,11 +54,11 @@ object ReturnTrips {
         For reasons of spherical geometry, those squares will not be exact, but
         the side-length is always > 100m. */
 
-        // Latitude "base-angle": for every angle_lat degrees we go 100m
+        // Latitude "base-angle": for every "angle_lat" degrees we made >100m distance
         val angle_lat = (2*pi*R)/(101*360)
         // max latitude found in our dataset
         val max_lat = 60.908756256113516
-        // Longitude "base-angle": for every angle_lon degrees we go 100m
+        // Longitude "base-angle": for every "angle_lon" degrees we made >100m distance
         val angle_lon = (2*pi*R*math.cos(math.toRadians(max_lat)))/(101*360)
 
         def bucket_lat(lat: Column) : Column = {
@@ -71,9 +71,8 @@ object ReturnTrips {
             return long_bucket
         }
 
-        /*
-        Time based baskets will round dropoff and pickup time to 8h groups
-        */
+        
+        // Time based baskets will round dropoff and pickup time to 8h groups
         def bucket_time(time: Column) : Column = {   
             val time_bucket = floor((time.cast("long") / 29800D)) // 28800D
             return time_bucket
