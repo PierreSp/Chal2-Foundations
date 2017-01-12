@@ -12,31 +12,24 @@ object ReturnTrips {
   def compute(trips : Dataset[Row], spark : SparkSession) : Dataset[Row] = {
     import spark.implicits._
 
-        /*
-        # GENERAL
+        /* GENERAL
         This functions matches trips with return trips.
         Given a trip a, we consider another trip b as a return trip iff::
             i) b’s pickup time is within 8 hours after a’s dropoff time
             ii) b’s pickup location is within 100m of a’s dropoff location
-            iii) b’s dropoff location is within 100m of a’s pickup location
-        */
+            iii) b’s dropoff location is within 100m of a’s pickup location */
 
-        /*
-        Naive Idea:
+        /* Naive Idea:
         Join all trips pairwise and verify these conditions for every pair.
         Problem: 
-        The dataset size would explode and it would not be computationally feasible.
-        */
+        The dataset size would explode and it would not be computationally feasible. */
 
-        /*
-        Better Idea:
+        /* Better Idea:
         Instead of joining all trips pairwise, group them into (smartly chosen) baskets.
         This will reduce the joined table size by a large amount.
         Ideally matching trips are located in the same basket.
         
-        We will to create such baskets based on location.
-        Baskets based on time would be a possibility, too.
-        */
+        We will to create such baskets based on location and on time */
 
         // Radius of the earth
         val R = 6371000
@@ -55,13 +48,11 @@ object ReturnTrips {
             return deltasigma*lit(6371e3)
         }
 
-        /*
-        First create those location-based baskets.
+        /* First create those location-based baskets.
         They can be imagined as putting a grid of squares over the earth, with
         sides of length 100m.
         For reasons of spherical geometry, those squares will not be exact, but
-        the side-length is always > 100m.
-        */
+        the side-length is always > 100m. */
 
         // Latitude "base-angle": for every angle_lat degrees we go 100m
         val angle_lat = (2*pi*R)/(101*360)
@@ -80,10 +71,13 @@ object ReturnTrips {
             return long_bucket
         }
 
-        // def initBucketTime(time: Column) : Column = {   
-        //     val BucketTime = floor((time.cast("long") / 29800D)) // 28800D
-        //     return BucketTime
-        // }
+        /*
+        Time based baskets will round dropoff and pickup time to 8h groups
+        */
+        def bucket_time(time: Column) : Column = {   
+            val time_bucket = floor((time.cast("long") / 29800D)) // 28800D
+            return time_bucket
+        }
 
         // Drop all columns that are never used.
         val trips2 = trips.
@@ -106,10 +100,11 @@ object ReturnTrips {
             withColumn("Pickup_Long_Bucket", bucket_long($"pickup_longitude")).
             withColumn("Pickup_Lat_Bucket", bucket_lat($"pickup_latitude")).
             withColumn("Dropoff_Long_Bucket", bucket_long($"dropoff_longitude")).
-            withColumn("Dropoff_Lat_Bucket", bucket_lat($"dropoff_latitude"))
+            withColumn("Dropoff_Lat_Bucket", bucket_lat($"dropoff_latitude")).
+            withColumn("Pickup_Time_Bucket", bucket_time($"tpep_pickup_datetime")).
+            withColumn("Dropoff_Time_Bucket", bucket_time($"tpep_dropoff_datetime"))
 
-        /*
-        We need to look at neighbouring buckets too to get all potential
+        /* We need to look at neighbouring buckets too to get all potential
         matches, therefore we will introduce clones of each trip, with adjusted
         Pickup-Location buckets.
         
@@ -119,8 +114,7 @@ object ReturnTrips {
 
         As we always want to match dropoff to pickup (and vice-versa) it is
         sufficient to clone one of those and not both (cloning both would
-        actually introduce duplicates)
-        */
+        actually introduce duplicates) */
         val trips_cloned = trips_bucketed.
             withColumn(
                 "Pickup_Long_Bucket", 
@@ -133,15 +127,24 @@ object ReturnTrips {
                               $"Pickup_Lat_Bucket",
                               $"Pickup_Lat_Bucket"+1)))
 
+        /* We will create a seperate value the time-clones, as we only need
+        them on one side of the join */
+        val tips_cloned_with_time = trips_cloned.
+            withColumn(
+                "Pickup_Time_Bucket", 
+                explode(array($"Pickup_Time_Bucket"-1,
+                              $"Pickup_Time_Bucket")))
+
 
         // Perform the join based on the introduced buckets!
         val trips_joined = trips_cloned.as("to").
             join(
-                trips_cloned.as("back"), 
+                trips_cloned_with_time.as("back"), 
                 $"to.Pickup_Long_Bucket" === $"back.Dropoff_Long_Bucket" &&
                 $"to.Pickup_Lat_Bucket" === $"back.Dropoff_Lat_Bucket" &&
                 $"back.Pickup_Long_Bucket" === $"to.Dropoff_Long_Bucket" &&
-                $"back.Pickup_Lat_Bucket" === $"to.Dropoff_Lat_Bucket", "inner")
+                $"back.Pickup_Lat_Bucket" === $"to.Dropoff_Lat_Bucket" &&
+                $"to.Dropoff_Time_Bucket" === $"back.Pickup_Time_Bucket", "inner")
         
         // Drop buckets as they will not be used anymore.
         val trips_joined2 = trips_joined.
@@ -152,7 +155,11 @@ object ReturnTrips {
             drop($"back.Pickup_Long_Bucket").
             drop($"back.Pickup_Lat_Bucket").
             drop($"back.Dropoff_Long_Bucket").
-            drop($"back.Dropoff_Lat_Bucket")
+            drop($"back.Dropoff_Lat_Bucket").
+            drop($"to.Pickup_Time_Bucket").
+            drop($"to.Dropoff_Time_Bucket").
+            drop($"back.Pickup_Time_Bucket").
+            drop($"back.Dropoff_Time_Bucket")
 
         // Finally we will "really" check our initial conditions.
         // Begin with the time-restriction (see i) above).
